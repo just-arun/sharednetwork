@@ -9,6 +9,7 @@ import (
 	"net/http"
 	pathP "path"
 	"regexp"
+	"runtime"
 	"text/template"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -90,7 +91,7 @@ func createFile(f fs.FileInfo) *File {
 		}
 	}
 
-	isVideo, err := regexp.MatchString("{.mp4}", f.Name())
+	isVideo, err := regexp.MatchString(".mp4", f.Name())
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -102,6 +103,8 @@ func createFile(f fs.FileInfo) *File {
 }
 
 func populateItems(p string) {
+	fmt.Println(p)
+	fileList = []*File{}
 	files, err := ioutil.ReadDir(p)
 	if err != nil {
 		fmt.Println(err)
@@ -121,12 +124,14 @@ func openCors(w http.ResponseWriter) {
 func getData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	openCors(w)
-	param := r.URL.Query().Get("param")
-	if param != "" {
+	param := r.URL.Query()["path"]
+	fmt.Println(param)
+	if len(param) == 0 {
 		w.Write([]byte("no1"))
 		return
 	}
-	value := path + param
+	value := path + param[0]
+	fmt.Println(value)
 	populateItems(value)
 	data, err := json.Marshal(&fileList)
 	if err != nil {
@@ -139,6 +144,7 @@ func getData(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	fmt.Println(runtime.GOOS)
 	populateItems("/Users/arunv/Documents/projects")
 	authServer(func() {
 		http.HandleFunc("/dash", serverFile)

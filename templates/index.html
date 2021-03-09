@@ -1,14 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dash</title>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>dash</title>
+	<style>
+		* {
+			color: aliceblue;
+		}
+
+		body,
+		html,
+		button {
+			background: rgb(31, 30, 30);
+		}
+
+		button {
+			background: rgb(22, 22, 22);
+			cursor: pointer;
+		}
+
+		.grid {
+			display: flex;
+			flex-wrap: wrap;
+		}
+
+		.grid__item {
+			margin: 10px;
+		}
+
+		.folder {
+			padding: 10px;
+			border: 1px solid grey;
+			border-radius: 4px;
+			height: 120px;
+			min-width: 80px;
+			cursor: pointer;
+			transition: .3s;
+		}
+
+		.folder:hover {
+			box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.109);
+		}
+
+		.selected {
+			max-height: 100vh;
+			width: 100%;
+			top: 20px;
+			left: 0;
+			z-index: 1;
+		}
+		.selected video {
+			max-width: 100%;
+			max-height: 100%;
+			left: 0;
+			top: 0;
+		}
+
+		.close {
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			z-index: 2;
+		}
+		.tools {
+			display: flex;
+			align-items: center;
+			padding: 10px;
+		}
+		.tools button {
+			padding: 4px 10px;
+		}
+	</style>
 </head>
 <body>
-    <div id="app">
-        <div id="basePath">{{ .path }}</div>
-    </div>
+	<div id="app">
+		<div class="tools">
+			<button @click="backBtn()" 
+			:disabled="!(path.length > 1)"
+			style="border: 0px;padding: 4px 10px;
+			border: 1px solid grey;">&larr;</button>
+			<div style="border: 1px solid grey;flex: 1;">
+				<button 
+				:disabled="!(path.length > 1)"
+				style="border: 0px;"
+				v-for="(item, i) in path" :key="i" 
+				@click="jumpToNavPath(i)">
+			  <span v-if="i != 0">/</span>	[[removeSlashNav(item)]]
+			</button>
+			</div>
+		</div>
+		<div class="selected" v-if="selected.hasValue">
+			<button class="close" @click="closeSelected()">
+				X
+			</button>
+			<video controls contenteditable contextmenu="false" 
+			v-if="selected.type == 'video'" :src="selected.url"></video>
+		</div>
+		<div class="grid">
+			<div class="grid__item" v-for="(item, i) in items" :key="i">
+				<button @dblclick="focusFolder(item)" v-if="item.folder" class="folder">
+					[[ item.name ]]
+				</button>
+				<div v-else-if="item.video" class="video">
+					<button style="border: none;">
+						<video @dblclick="openOut(`${path[path.length-1]}/${item.name}`, 'video')"
+							:src="`${removeSlash(path[path.length-1])}/${item.name}`" height="100" width="100" style="background: #000;"></video>
+					</button>
+				</div>
+				<div v-else-if="item.image" class="image">
+					<button style="border: none;">
+						<img height="100" width="100" :src="`${removeSlash(path[path.length-1])}/${item.name}`" alt=""
+							@dblclick="openOut(`${path[path.length-1]}/${item.name}`, 'image')">
+					</button>
+				</div>
+				<div v-else class="others">
+					[[ item.name ]]
+				</div>
+			</div>
+		</div>
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+	<script>
+		const app = new Vue({
+			el: "#app",
+			delimiters: ['[[', ']]'],
+			data: {
+				items: [],
+				path: ['/'],
+				base: '',
+				selected: {
+					url: "",
+					name: "",
+					size: "",
+					type: "",
+					hasValue: false
+				}
+			},
+			created() {
+				this.initFunc();
+			},
+			methods: {
+				focusFolder(param) {
+					let folderPath = this.path[this.path.length - 1] + 
+					(/\//.test(param.name) ? param.name : ('/' + param.name))
+					console.log(this.path[this.path.length - 1], folderPath);
+					this.path.push(folderPath)
+					this.initFunc()
+				},
+				closeSelected() {
+					this.selected = {
+						url: "",
+						name: "",
+						size: "",
+						type: "",
+						hasValue: false
+					}
+				},
+				removeSlashNav(str) {
+					let val = str.length > 1 ? String(str).replace(/\//,'') : '/'
+					let valArr = val.split('/')
+					val = valArr[valArr.length - 1]
+					return !!val ? val : '/';
+				},
+				removeSlash(str) {
+					let val = str.length > 1 ? String(str).replace(/\//,'') : '/'
+					return !!val ? val : '/';
+				},
+				jumpToNavPath(i) {
+					let paths = this.path;
+					this.path = paths.splice(0, i+1);
+					this.initFunc()
+					this.closeSelected()
+				},
+				backBtn() {
+					if (this.path.length > 1) {
+						this.path = this.path.splice(0, this.path.length - 1)
+						this.initFunc()
+					}
+				},
+				openOut(path, type) {
+					this.selected.url = String(path).replace("//", '/');
+					this.selected.type = type;
+					this.selected.hasValue = true;
+				},
+				initFunc() {
+					this.base = 'http://' + window.location.hostname + ':' + window.location.port
+					let url = `/api?path=${this.path[this.path.length - 1].replace("//", '/')}`
+					fetch(url)
+						.then(res => res.json())
+						.then(res => {
+							this.items = res
+							.sort((a, b) => 
+							a.folder < b.folder ? 1 : -1);
+						}).catch(err => {
+							console.log(err);
+						})
+				}
+			}
+		})
+	</script>
 </body>
 </html>

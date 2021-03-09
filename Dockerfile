@@ -1,9 +1,13 @@
 FROM golang
 
-WORKDIR /go/src/app
-COPY . .
+RUN mkdir /app
 
-RUN go get -d -v ./...
-RUN go install -v ./...
+ADD . /app
 
-CMD ["app"]
+WORKDIR /app
+
+EXPOSE 3030
+
+RUN go build -o main .
+
+CMD ["/app/main"]
