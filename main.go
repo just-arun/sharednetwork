@@ -129,7 +129,7 @@ func getData(w http.ResponseWriter, r *http.Request) {
 	value := path + param
 	populateItems(value)
 	data, err := json.Marshal(&fileList)
-	if err == nil {
+	if err != nil {
 		fmt.Println(err.Error())
 		w.Write([]byte("no2"))
 		return
