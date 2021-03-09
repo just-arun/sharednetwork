@@ -18,6 +18,7 @@ import (
 var (
 	name     = 12032
 	pwd      = "supersecret"
+	platform string
 	path     = ""
 	port     string
 	fileList []*File
@@ -35,16 +36,23 @@ type File struct {
 func authServer(cb func()) {
 	var (
 		uName int
+		uPwd string
 	)
 	fmt.Print("n: ")
 	fmt.Scan(&uName)
 	fmt.Print("w: ")
-	uPwd, err := terminal.ReadPassword(0)
-	if err != nil {
-		fmt.Println(err)
-		return
+	if platform == "linux" || platform == "darwin" {
+		tuPwd, err := terminal.ReadPassword(0)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		uPwd = string(tuPwd)
+	} else {
+		fmt.Scan(&uPwd)
 	}
-	if !(name == uName && pwd == string(uPwd)) {
+	
+	if !(name == uName && pwd == uPwd) {
 		log.Fatal("[failed]")
 		return
 	}
@@ -123,7 +131,7 @@ func openCors(w http.ResponseWriter) {
 
 func getData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
-	openCors(w)
+	// openCors(w)
 	param := r.URL.Query()["path"]
 	fmt.Println(param)
 	if len(param) == 0 {
@@ -144,7 +152,7 @@ func getData(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	fmt.Println(runtime.GOOS)
+	platform = runtime.GOOS
 	populateItems("/Users/arunv/Documents/projects")
 	authServer(func() {
 		http.HandleFunc("/dash", serverFile)
