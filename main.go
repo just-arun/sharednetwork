@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	pathP "path"
 	"regexp"
 	"runtime"
@@ -36,7 +36,7 @@ type File struct {
 func authServer(cb func()) {
 	var (
 		uName int
-		uPwd string
+		uPwd  string
 	)
 	fmt.Print("n: ")
 	fmt.Scan(&uName)
@@ -51,7 +51,7 @@ func authServer(cb func()) {
 	} else {
 		fmt.Scan(&uPwd)
 	}
-	
+
 	if !(name == uName && pwd == uPwd) {
 		log.Fatal("[failed]")
 		return
@@ -83,7 +83,7 @@ func serverFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createFile(f fs.FileInfo) *File {
+func createFile(f os.FileInfo) *File {
 	var file File
 	file.Folder = f.IsDir()
 	file.Size = int(f.Size())
@@ -153,6 +153,7 @@ func getData(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	platform = runtime.GOOS
+	fmt.Println(platform)
 	populateItems("/Users/arunv/Documents/projects")
 	authServer(func() {
 		http.HandleFunc("/dash", serverFile)
