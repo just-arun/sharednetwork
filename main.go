@@ -153,8 +153,10 @@ func getData(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	platform = runtime.GOOS
+	// handle err
+
+	fmt.Println()
 	fmt.Println(platform)
-	populateItems("/Users/arunv/Documents/projects")
 	authServer(func() {
 		http.HandleFunc("/dash", serverFile)
 		http.HandleFunc("/api", getData)
