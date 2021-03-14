@@ -67,8 +67,22 @@ func setupStatic() {
 	http.Handle("/", http.FileServer(http.Dir(path)))
 }
 
-func serverFile(w http.ResponseWriter, r *http.Request) {
+func serverTemplate(w http.ResponseWriter, r *http.Request) {
+	fp := pathP.Join("templates", "dash.html")
+	tmpl, err := template.ParseFiles(fp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	if err := tmpl.Execute(w, map[string]string{
+		"path": path,
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func serverFile(w http.ResponseWriter, r *http.Request) {
 	fp := pathP.Join("templates", "index.html")
 	tmpl, err := template.ParseFiles(fp)
 	if err != nil {
@@ -159,6 +173,7 @@ func main() {
 	fmt.Println(platform)
 	authServer(func() {
 		http.HandleFunc("/dash", serverFile)
+		http.HandleFunc("/index", serverTemplate)
 		http.HandleFunc("/api", getData)
 		setupStatic()
 		fmt.Println("server started")
